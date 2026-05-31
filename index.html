@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#080a0f">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lyric Lab">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<title>Lyric Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=IBM+Plex+Mono:wght@300;400;500&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080a0f;
+  --surface: #0f1117;
+  --card: #141720;
+  --card2: #1a1e2b;
+  --border: #252a38;
+  --border2: #1e2230;
+  --accent: #4f8ef7;
+  --accent2: #a78bfa;
+  --red: #ef4444;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --text: #e8ecf8;
+  --text-muted: #6b7494;
+  --text-dim: #3a3f55;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'IBM Plex Mono', monospace;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#scrollArea {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding-bottom: 30px;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(var(--border2) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border2) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* INSTALL BANNER */
+#installBanner {
+  display: none;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 500;
+  background: var(--accent);
+  color: #fff;
+  font-size: 11px;
+  letter-spacing: 1px;
+  padding: 10px 14px;
+  align-items: center;
+  gap: 10px;
+}
+#installBanner button {
+  margin-left: auto;
+  background: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.4);
+  color: #fff;
+  border-radius: 4px;
+  padding: 5px 12px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+#dismissBanner {
+  background: none !important;
+  border: none !important;
+  font-size: 16px !important;
+  padding: 0 4px !important;
+}
+
+/* HEADER */
+.header {
+  flex-shrink: 0;
+  z-index: 100;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 10px;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+}
+.logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 20px;
+  color: var(--accent);
+}
+.logo em {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-family: 'IBM Plex Mono', monospace;
+  margin-left: 8px;
+  letter-spacing: 2px;
+}
+.export-btn {
+  display: flex; align-items: center; gap: 5px;
+  padding: 8px 12px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.export-btn:active { opacity: 0.75; }
+.export-btn.busy { background: var(--amber); }
+/* iOS EXPORT MODAL */
+.ios-modal-backdrop {
+  display: none;
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  align-items: flex-end;
+  justify-content: center;
+}
+.ios-modal-backdrop.show { display: flex; }
+.ios-modal {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px 16px 0 0;
+  padding: 24px 20px max(28px, env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 500px;
+}
+.ios-modal-title {
+  font-size: 13px; letter-spacing: 2px;
+  color: var(--text-muted); text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.ios-modal-subtitle {
+  font-family: 'Crimson Pro', serif;
+  font-size: 17px; color: var(--text);
+  margin-bottom: 20px; font-style: italic;
+}
+.ios-modal-steps {
+  font-size: 12px; color: var(--text-muted);
+  line-height: 2; letter-spacing: 0.5px;
+  margin-bottom: 20px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+}
+.ios-modal-steps strong { color: var(--text); }
+.ios-open-btn {
+  display: block; width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #fff; border: none;
+  border-radius: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase;
+  cursor: pointer; margin-bottom: 10px;
+  text-decoration: none; text-align: center;
+}
+.ios-cancel-btn {
+  display: block; width: 100%;
+  padding: 12px;
+  background: transparent; color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 11px; letter-spacing: 1px;
+  cursor: pointer; text-align: center;
+}
+
+.song-title-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 22px;
+  font-style: italic;
+  outline: none;
+  padding: 4px 2px;
+  caret-color: var(--accent);
+}
+.song-title-input::placeholder { color: var(--text-dim); }
+
+/* SECTION */
+.section-block {
+  position: relative; z-index: 1;
+  margin: 20px 14px 0;
+}
+.section-header-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 8px;
+}
+.section-type-select {
+  font-size: 9px; letter-spacing: 2px;
+  color: var(--accent);
+  background: rgba(79,142,247,0.1);
+  border: 1px solid rgba(79,142,247,0.25);
+  border-radius: 3px;
+  padding: 3px 8px;
+  font-family: 'IBM Plex Mono', monospace;
+  outline: none; cursor: pointer; appearance: none;
+  text-transform: uppercase;
+}
+.section-type-select option { background: var(--card); color: var(--text); }
+.delete-section-btn {
+  margin-left: auto;
+  background: none; border: none;
+  color: var(--text-dim); font-size: 16px;
+  cursor: pointer; padding: 2px 8px;
+}
+.delete-section-btn:active { color: var(--red); }
+
+/* LINE CARD */
+.line-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 10px;
+  overflow: hidden;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.line-card.is-playing {
+  border-color: var(--green);
+  box-shadow: 0 0 0 1px rgba(34,197,94,0.2), 0 4px 20px rgba(34,197,94,0.1);
+}
+.line-card.is-recording {
+  border-color: var(--red);
+  box-shadow: 0 0 0 1px rgba(239,68,68,0.3), 0 4px 20px rgba(239,68,68,0.15);
+}
+
+/* Line top */
+.line-top { display: flex; align-items: flex-start; }
+.line-number {
+  font-size: 9px; color: var(--text-dim);
+  padding: 14px 4px 0 10px;
+  min-width: 24px;
+}
+.lyric-wrap { flex: 1; }
+.lyric-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border2);
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 19px;
+  font-weight: 300;
+  line-height: 1.5;
+  padding: 12px 10px 10px 4px;
+  outline: none; resize: none;
+  caret-color: var(--accent);
+  min-height: 44px; overflow: hidden;
+}
+.lyric-input::placeholder { color: var(--text-dim); font-style: italic; }
+.line-side { padding: 10px 8px 0 0; }
+.delete-line-btn {
+  background: none; border: none;
+  color: var(--text-dim); font-size: 14px;
+  cursor: pointer; padding: 4px; border-radius: 4px;
+}
+.delete-line-btn:active { color: var(--red); }
+
+/* Controls */
+.line-controls {
+  display: flex; align-items: center;
+  gap: 5px; padding: 7px 8px;
+  background: var(--card2);
+}
+.wave-wrap {
+  flex: 1; position: relative; height: 28px; cursor: pointer;
+  min-width: 0;
+}
+.wave-progress {
+  position: absolute; left: 0; top: 0; bottom: 0;
+  background: rgba(34,197,94,0.1);
+  pointer-events: none; border-radius: 2px;
+  width: 0%; transition: width 0.1s;
+}
+.mini-wave {
+  position: relative; z-index: 1;
+  width: 100%; height: 28px;
+  display: flex; align-items: center;
+  gap: 2px; overflow: hidden;
+}
+.mini-wave-bar {
+  flex: 1; border-radius: 1px;
+  background: var(--border); min-height: 2px;
+  transition: height 0.08s ease, background 0.15s;
+}
+.mini-wave-bar.has-audio { background: rgba(79,142,247,0.5); }
+.mini-wave-bar.playing { background: var(--green); }
+.mini-wave-bar.recording { background: var(--red); }
+
+/* Buttons */
+.ctrl-btn {
+  display: flex; align-items: center; justify-content: center;
+  height: 34px; min-width: 34px; width: auto;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 10px; letter-spacing: 0.5px;
+  cursor: pointer;
+  font-family: 'IBM Plex Mono', monospace;
+  transition: all 0.12s;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0 8px;
+  gap: 3px;
+  -webkit-user-select: none; user-select: none;
+}
+.ctrl-btn:active { transform: scale(0.93); opacity: 0.85; }
+
+.ctrl-btn.rec-btn {
+  background: rgba(239,68,68,0.1);
+  border-color: rgba(239,68,68,0.4);
+  color: var(--red);
+}
+.ctrl-btn.rec-btn.recording {
+  background: var(--red); color: #fff;
+  animation: rec-glow 1.2s infinite;
+}
+@keyframes rec-glow {
+  0%,100% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5); }
+  50% { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+}
+.ctrl-btn.play-btn {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.3);
+  color: var(--accent);
+}
+.ctrl-btn.play-btn.playing {
+  background: rgba(34,197,94,0.15);
+  border-color: var(--green); color: var(--green);
+}
+.ctrl-btn.play-btn:disabled { opacity: 0.3; pointer-events: none; }
+.ctrl-btn.play-all-btn {
+  background: rgba(167,139,250,0.1);
+  border-color: rgba(167,139,250,0.3);
+  color: var(--accent2);
+  font-size: 9px;
+}
+.ctrl-btn.play-all-btn.playing {
+  background: rgba(167,139,250,0.2);
+  border-color: var(--accent2);
+}
+.duration-badge {
+  font-size: 9px; color: var(--text-dim);
+  min-width: 26px; text-align: right; flex-shrink: 0;
+}
+.rec-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #fff; display: inline-block; margin-right: 3px;
+  animation: blink 1s infinite;
+}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+/* ADD BUTTONS */
+.add-row {
+  display: flex; gap: 8px;
+  margin: 6px 0 0; position: relative; z-index: 1;
+}
+.add-btn {
+  flex: 1; padding: 10px;
+  background: transparent;
+  border: 1px dashed var(--border);
+  border-radius: 6px;
+  color: var(--text-dim);
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; letter-spacing: 2px;
+  text-transform: uppercase; cursor: pointer;
+  transition: all 0.2s;
+}
+.add-btn:active { border-color: var(--accent); color: var(--accent); }
+.add-section-row {
+  margin: 20px 14px 0;
+  position: relative; z-index: 1;
+}
+
+/* MIC PERMISSION BANNER */
+.mic-banner {
+  display: none;
+  margin: 14px 14px 0;
+  background: rgba(239,68,68,0.1);
+  border: 1px solid rgba(239,68,68,0.3);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-size: 11px;
+  color: #fca5a5;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+  position: relative; z-index: 1;
+}
+.mic-banner.show { display: block; }
+.mic-banner strong { color: var(--red); display: block; margin-bottom: 4px; }
+
+/* GLOBAL BAR */
+.global-bar {
+  flex-shrink: 0;
+  background: var(--bg);
+  border-top: 1px solid var(--border);
+  padding: 10px 14px max(12px, env(safe-area-inset-bottom));
+  z-index: 10;
+}
+.global-progress-track {
+  height: 3px; background: var(--border);
+  border-radius: 2px; margin-bottom: 10px;
+  cursor: pointer; position: relative;
+}
+.global-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 2px; width: 0%;
+  pointer-events: none;
+}
+.global-controls { display: flex; align-items: center; gap: 10px; }
+.global-now-playing { flex: 1; min-width: 0; }
+.global-line-label {
+  font-size: 9px; color: var(--text-muted);
+  letter-spacing: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.global-lyric-preview {
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px; font-style: italic;
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.global-btn {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-muted);
+  font-size: 14px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all 0.15s;
+}
+.global-btn:active { transform: scale(0.9); }
+.global-btn.primary {
+  width: 48px; height: 48px;
+  background: var(--accent); border-color: var(--accent);
+  color: #fff; font-size: 18px;
+}
+
+/* TOAST */
+.toast {
+  position: fixed; top: 70px; left: 50%;
+  transform: translateX(-50%) translateY(-10px);
+  background: var(--card2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 18px;
+  font-size: 11px; letter-spacing: 0.5px; color: var(--text-muted);
+  z-index: 400; opacity: 0; transition: all 0.25s;
+  white-space: nowrap; pointer-events: none; max-width: 90vw;
+  white-space: normal; text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- INSTALL BANNER -->
+<div id="installBanner">
+  <span>Add Lyric Lab to home screen for full mic access</span>
+  <button id="installBtn" onclick="installPWA()">INSTALL</button>
+  <button id="dismissBanner" onclick="document.getElementById('installBanner').style.display='none'">✕</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- HEADER -->
+<div class="header" id="mainHeader">
+  <div class="header-top">
+    <div class="logo">Lyric Lab <em>STUDIO</em></div>
+    <button class="export-btn" id="exportBtn" onclick="exportSong()">⬇ EXPORT</button>
+  </div>
+  <input class="song-title-input" id="songTitle" placeholder="Song title…" type="text">
+</div>
+
+<!-- MIC PERMISSION ERROR -->
+<div class="mic-banner" id="micBanner">
+  <strong>⚠ Microphone blocked</strong>
+  In Vanadium: tap the 🔒 lock icon in the address bar → Site permissions → Microphone → Allow. Then reload.
+</div>
+
+<!-- SCROLLABLE CONTENT -->
+<div id="scrollArea">
+
+<!-- SONG -->
+<div id="songContainer"></div>
+
+<div class="add-section-row">
+  <button class="add-btn" onclick="addSection()" style="width:100%">＋ ADD SECTION</button>
+</div>
+
+</div><!-- end scrollArea -->
+
+<!-- GLOBAL BAR -->
+<div class="global-bar">
+  <div class="global-progress-track" id="globalTrack" onclick="seekGlobal(event)">
+    <div class="global-progress-fill" id="globalFill"></div>
+  </div>
+  <div class="global-controls">
+    <button class="global-btn" onclick="globalSkipBack()">⏮</button>
+    <button class="global-btn primary" id="globalPlayBtn" onclick="toggleGlobalPlay()">▶</button>
+    <button class="global-btn" onclick="globalSkipForward()">⏭</button>
+    <div class="global-now-playing">
+      <div class="global-line-label" id="globalLineLabel">NO AUDIO YET</div>
+      <div class="global-lyric-preview" id="globalLyricPreview">Record a line to begin</div>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ── SERVICE WORKER ──────────────────────────────────────────
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(console.warn);
+}
+
+// ── PWA INSTALL ─────────────────────────────────────────────
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+function installPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then(() => {
+    deferredPrompt = null;
+    document.getElementById('installBanner').style.display = 'none';
+  });
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner').style.display = 'none';
+  showToast('✓ Lyric Lab installed!');
+});
+
+// ── STATE ────────────────────────────────────────────────────
+const SECTION_TYPES = ['VERSE','CHORUS','PRE-CHORUS','BRIDGE','INTRO','OUTRO','HOOK','BREAK'];
+let sections = [];
+let globalQueue = [];   // lines with audio, in song order
+let globalIdx  = -1;
+let globalAudio = null;
+let globalPlaying = false;
+let activeRec = null;   // {lineId, mr, stream, chunks, waveInt, startTime}
+let singleAudio = null;
+let singleId = null;
+
+// ── INIT ─────────────────────────────────────────────────────
+addSection('VERSE');
+
+// ── SECTION ──────────────────────────────────────────────────
+function addSection(type = 'VERSE') {
+  const s = { id: uid(), type, lines: [] };
+  sections.push(s);
+  addLine(s.id, false);
+  render();
+  setTimeout(() => {
+    const sec = document.getElementById('sec-' + s.id);
+    if (sec) { const sa = document.getElementById('scrollArea'); sa.scrollTo({ top: sec.offsetTop - 20, behavior: 'smooth' }); }
+  }, 80);
+}
+function removeSection(sid) {
+  sections = sections.filter(s => s.id !== sid);
+  render();
+}
+function setSectionType(sid, val) {
+  const s = sections.find(s => s.id === sid);
+  if (s) s.type = val;
+}
+
+// ── LINE ─────────────────────────────────────────────────────
+function addLine(sid, doRender = true) {
+  const s = sections.find(s => s.id === sid);
+  if (!s) return;
+  const newLine = { id: uid(), lyric: '', blob: null, url: null, duration: 0, bars: randBars(32, false) };
+  s.lines.push(newLine);
+  if (doRender) {
+    render();
+    setTimeout(() => {
+      const card = document.getElementById('card-' + newLine.id);
+      if (card) { const sa = document.getElementById('scrollArea'); sa.scrollTop = card.offsetTop - sa.clientHeight/2 + card.clientHeight/2; }
+      const ta = card?.querySelector('.lyric-input');
+      if (ta) ta.focus();
+    }, 80);
+  }
+}
+function removeLine(sid, lid) {
+  const s = sections.find(s => s.id === sid);
+  if (!s) return;
+  const l = s.lines.find(l => l.id === lid);
+  if (l?.url) URL.revokeObjectURL(l.url);
+  s.lines = s.lines.filter(l => l.id !== lid);
+  render();
+}
+function setLyric(lid, val) {
+  const l = findLine(lid);
+  if (l) l.lyric = val;
+  if (globalQueue[globalIdx]?.id === lid)
+    document.getElementById('globalLyricPreview').textContent = val || '…';
+}
+function findLine(lid) {
+  for (const s of sections) {
+    const l = s.lines.find(l => l.id === lid);
+    if (l) return l;
+  }
+  return null;
+}
+function lineNum(lid) {
+  let n = 1;
+  for (const s of sections) for (const l of s.lines) {
+    if (l.id === lid) return n; n++;
+  }
+  return 0;
+}
+function sectionOf(lid) {
+  return sections.find(s => s.lines.some(l => l.id === lid));
+}
+
+// ── RENDER ───────────────────────────────────────────────────
+function render() {
+  const container = document.getElementById('songContainer');
+  container.innerHTML = '';
+  let n = 1;
+  sections.forEach(sec => {
+    const wrap = document.createElement('div');
+    wrap.className = 'section-block';
+    wrap.id = 'sec-' + sec.id;
+
+    // Header
+    const hdr = document.createElement('div');
+    hdr.className = 'section-header-row';
+    const sel = document.createElement('select');
+    sel.className = 'section-type-select';
+    SECTION_TYPES.forEach(t => {
+      const o = document.createElement('option');
+      o.value = t; o.textContent = t; if (t === sec.type) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.onchange = () => setSectionType(sec.id, sel.value);
+    const delSec = document.createElement('button');
+    delSec.className = 'delete-section-btn'; delSec.textContent = '✕';
+    delSec.onclick = () => removeSection(sec.id);
+    hdr.appendChild(sel); hdr.appendChild(delSec);
+    wrap.appendChild(hdr);
+
+    sec.lines.forEach(line => {
+      wrap.appendChild(buildCard(sec.id, line, n++));
+    });
+
+    const addRow = document.createElement('div');
+    addRow.className = 'add-row';
+    const addL = document.createElement('button');
+    addL.className = 'add-btn'; addL.textContent = '＋ ADD LINE';
+    addL.onclick = () => addLine(sec.id);
+    addRow.appendChild(addL);
+    wrap.appendChild(addRow);
+
+    container.appendChild(wrap);
+  });
+  buildQueue();
+}
+
+function buildCard(sid, line, num) {
+  const card = document.createElement('div');
+  card.className = 'line-card'; card.id = 'card-' + line.id;
+
+  // Top
+  const top = document.createElement('div'); top.className = 'line-top';
+  const numEl = document.createElement('div'); numEl.className = 'line-number'; numEl.textContent = num;
+  const lyricWrap = document.createElement('div'); lyricWrap.className = 'lyric-wrap';
+  const ta = document.createElement('textarea');
+  ta.className = 'lyric-input'; ta.placeholder = 'Write lyric…';
+  ta.value = line.lyric; ta.rows = 1;
+  ta.oninput = function() {
+    setLyric(line.id, this.value);
+    this.style.height = 'auto';
+    this.style.height = Math.max(44, this.scrollHeight) + 'px';
+  };
+  lyricWrap.appendChild(ta);
+  const side = document.createElement('div'); side.className = 'line-side';
+  const delL = document.createElement('button'); delL.className = 'delete-line-btn'; delL.textContent = '✕';
+  delL.onclick = () => removeLine(sid, line.id);
+  side.appendChild(delL);
+  top.appendChild(numEl); top.appendChild(lyricWrap); top.appendChild(side);
+  card.appendChild(top);
+
+  // Controls
+  const ctrl = document.createElement('div'); ctrl.className = 'line-controls';
+
+  // REC
+  const recBtn = document.createElement('button');
+  recBtn.className = 'ctrl-btn rec-btn'; recBtn.id = 'rec-' + line.id;
+  recBtn.innerHTML = line.blob ? '⏺ RE-REC' : '⏺ REC';
+  recBtn.onclick = () => toggleRec(line.id);
+
+  // Waveform
+  const waveWrap = document.createElement('div');
+  waveWrap.className = 'wave-wrap'; waveWrap.id = 'wwrap-' + line.id;
+  const waveProg = document.createElement('div');
+  waveProg.className = 'wave-progress'; waveProg.id = 'wprog-' + line.id;
+  const miniWave = document.createElement('div');
+  miniWave.className = 'mini-wave'; miniWave.id = 'wave-' + line.id;
+  line.bars.forEach((h, i) => {
+    const b = document.createElement('div');
+    b.className = 'mini-wave-bar' + (line.blob ? ' has-audio' : '');
+    b.id = 'wb-' + line.id + '-' + i;
+    b.style.height = h + 'px';
+    miniWave.appendChild(b);
+  });
+  waveWrap.appendChild(waveProg); waveWrap.appendChild(miniWave);
+
+  // Play line
+  const playBtn = document.createElement('button');
+  playBtn.className = 'ctrl-btn play-btn'; playBtn.id = 'play-' + line.id;
+  playBtn.textContent = '▶'; playBtn.title = 'Play line';
+  if (!line.blob) playBtn.disabled = true;
+  playBtn.onclick = () => playSingle(line.id);
+
+  // Play all from here
+  const playAllBtn = document.createElement('button');
+  playAllBtn.className = 'ctrl-btn play-all-btn'; playAllBtn.id = 'pall-' + line.id;
+  playAllBtn.innerHTML = '▶▶'; playAllBtn.title = 'Play all from here';
+  playAllBtn.onclick = () => playFromLine(line.id);
+
+  // Duration
+  const dur = document.createElement('div');
+  dur.className = 'duration-badge'; dur.id = 'dur-' + line.id;
+  dur.textContent = line.duration ? fmt(line.duration) : '';
+
+  ctrl.appendChild(recBtn); ctrl.appendChild(waveWrap);
+  ctrl.appendChild(playBtn); ctrl.appendChild(playAllBtn); ctrl.appendChild(dur);
+  card.appendChild(ctrl);
+  return card;
+}
+
+// ── RECORDING ────────────────────────────────────────────────
+async function toggleRec(lid) {
+  if (activeRec?.lineId === lid) { stopRec(); return; }
+  if (activeRec) stopRec();
+  stopSingle(); stopGlobal();
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+    document.getElementById('micBanner').classList.remove('show');
+    const mime = bestMime();
+    const chunks = [];
+    const mr = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+    mr.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
+    mr.onstop = () => {
+      const blob = new Blob(chunks, { type: mr.mimeType || 'audio/webm' });
+      onRecorded(lid, blob);
+      stream.getTracks().forEach(t => t.stop());
+      activeRec = null;
+      setRecBtn(lid, false);
+      setCardState(lid, '');
+    };
+    mr.start(100);
+    const startTime = Date.now();
+    const waveInt = setInterval(() => {
+      animRecWave(lid);
+      const el = document.getElementById('rec-' + lid);
+      if (el) el.innerHTML = `<span class="rec-dot"></span>${fmt((Date.now()-startTime)/1000)}`;
+    }, 120);
+    activeRec = { lineId: lid, mr, stream, chunks, waveInt, startTime };
+    setRecBtn(lid, true);
+    setCardState(lid, 'is-recording');
+  } catch (err) {
+    console.error(err);
+    document.getElementById('micBanner').classList.add('show');
+    showToast('Microphone access denied — see instructions above');
+  }
+}
+
+function stopRec() {
+  if (!activeRec) return;
+  clearInterval(activeRec.waveInt);
+  if (activeRec.mr.state !== 'inactive') activeRec.mr.stop();
+}
+
+function onRecorded(lid, blob) {
+  const line = findLine(lid);
+  if (!line) return;
+  if (line.url) URL.revokeObjectURL(line.url);
+  line.blob = blob; line.url = URL.createObjectURL(blob);
+  line.bars = randBars(32, true);
+
+  const tmp = new Audio(line.url);
+  tmp.onloadedmetadata = () => {
+    line.duration = isFinite(tmp.duration) ? tmp.duration : 0;
+    const d = document.getElementById('dur-' + lid);
+    if (d) d.textContent = line.duration ? fmt(line.duration) : '';
+  };
+
+  // Update wave
+  const w = document.getElementById('wave-' + lid);
+  if (w) w.querySelectorAll('.mini-wave-bar').forEach((b, i) => {
+    b.className = 'mini-wave-bar has-audio';
+    b.style.height = line.bars[i] + 'px';
+  });
+
+  const playBtn = document.getElementById('play-' + lid);
+  if (playBtn) playBtn.disabled = false;
+  const recBtn = document.getElementById('rec-' + lid);
+  if (recBtn) recBtn.innerHTML = '⏺ RE-REC';
+  buildQueue();
+  showToast('✓ Recorded');
+}
+
+function setRecBtn(lid, active) {
+  const btn = document.getElementById('rec-' + lid);
+  if (!btn) return;
+  btn.classList.toggle('recording', active);
+  if (!active) {
+    const l = findLine(lid);
+    btn.innerHTML = l?.blob ? '⏺ RE-REC' : '⏺ REC';
+  }
+}
+function animRecWave(lid) {
+  const w = document.getElementById('wave-' + lid);
+  if (!w) return;
+  w.querySelectorAll('.mini-wave-bar').forEach(b => {
+    b.className = 'mini-wave-bar recording';
+    b.style.height = (3 + Math.random() * 22) + 'px';
+  });
+}
+function setCardState(lid, cls) {
+  const c = document.getElementById('card-' + lid);
+  if (!c) return;
+  c.classList.remove('is-playing','is-recording');
+  if (cls) c.classList.add(cls);
+}
+
+// ── SINGLE LINE PLAY ─────────────────────────────────────────
+function playSingle(lid) {
+  const line = findLine(lid);
+  if (!line?.url) return;
+  if (singleId === lid && singleAudio && !singleAudio.paused) {
+    singleAudio.pause(); singleAudio = null; singleId = null;
+    setCardState(lid,''); setPlayBtn(lid,false); resetWave(lid);
+    document.getElementById('globalPlayBtn').textContent = '▶';
+    return;
+  }
+  stopSingle(); stopGlobal();
+  singleAudio = new Audio(line.url); singleId = lid;
+  setCardState(lid,'is-playing'); setPlayBtn(lid,true); updateGlobalUI(lid);
+  wireAudioProgress(singleAudio, lid, () => {
+    singleId = null; singleAudio = null;
+    setCardState(lid,''); setPlayBtn(lid,false); resetWave(lid);
+    document.getElementById('globalFill').style.width = '0%';
+    document.getElementById('globalPlayBtn').textContent = '▶';
+  });
+  singleAudio.play();
+  document.getElementById('globalPlayBtn').textContent = '⏸';
+}
+function stopSingle() {
+  if (!singleAudio) return;
+  singleAudio.pause();
+  if (singleId) { setCardState(singleId,''); setPlayBtn(singleId,false); resetWave(singleId); }
+  singleAudio = null; singleId = null;
+}
+function setPlayBtn(lid, on) {
+  const b = document.getElementById('play-' + lid);
+  if (!b) return;
+  b.classList.toggle('playing', on);
+  b.textContent = on ? '⏹' : '▶';
+}
+function resetWave(lid) {
+  const line = findLine(lid);
+  const w = document.getElementById('wave-' + lid);
+  if (w) w.querySelectorAll('.mini-wave-bar').forEach(b =>
+    b.className = 'mini-wave-bar' + (line?.blob ? ' has-audio' : '')
+  );
+  const p = document.getElementById('wprog-' + lid);
+  if (p) p.style.width = '0%';
+}
+
+// ── GLOBAL QUEUE ─────────────────────────────────────────────
+function buildQueue() {
+  globalQueue = [];
+  for (const s of sections)
+    for (const l of s.lines)
+      if (l.blob && l.url) globalQueue.push({ id: l.id, url: l.url });
+  if (!globalQueue.length) {
+    document.getElementById('globalLineLabel').textContent = 'NO AUDIO YET';
+    document.getElementById('globalLyricPreview').textContent = 'Record a line to begin';
+  }
+}
+
+function playFromLine(lid) {
+  const idx = globalQueue.findIndex(q => q.id === lid);
+  if (idx === -1) { showToast('Record this line first'); return; }
+  stopSingle(); stopGlobal();
+  globalIdx = idx; globalPlaying = true;
+  playGlobalIdx();
+}
+
+function playGlobalIdx() {
+  if (globalIdx < 0 || globalIdx >= globalQueue.length) { stopGlobal(); return; }
+  const item = globalQueue[globalIdx];
+  globalAudio = new Audio(item.url);
+  setCardState(item.id, 'is-playing'); setPlayBtn(item.id, true);
+  updateGlobalUI(item.id);
+  wireAudioProgress(globalAudio, item.id, () => {
+    setCardState(item.id,''); setPlayBtn(item.id,false); resetWave(item.id);
+    globalIdx++;
+    if (globalPlaying && globalIdx < globalQueue.length) playGlobalIdx();
+    else stopGlobal();
+  });
+  globalAudio.play();
+  document.getElementById('globalPlayBtn').textContent = '⏸';
+}
+
+function wireAudioProgress(audio, lid, onEnd) {
+  const wprog = document.getElementById('wprog-' + lid);
+  const wEl   = document.getElementById('wave-' + lid);
+  const gFill = document.getElementById('globalFill');
+  audio.ontimeupdate = () => {
+    if (!audio.duration) return;
+    const pct = (audio.currentTime / audio.duration) * 100;
+    if (wprog) wprog.style.width = pct + '%';
+    if (gFill) gFill.style.width = pct + '%';
+    if (wEl) wEl.querySelectorAll('.mini-wave-bar').forEach((b, i) => {
+      const bp = (i / 32) * 100;
+      b.className = 'mini-wave-bar ' + (bp <= pct ? 'playing' : 'has-audio');
+    });
+  };
+  audio.onended = onEnd;
+}
+
+function toggleGlobalPlay() {
+  if (globalPlaying) {
+    pauseGlobal();
+  } else if (globalIdx >= 0 && globalIdx < globalQueue.length && globalAudio) {
+    globalAudio.play(); globalPlaying = true;
+    document.getElementById('globalPlayBtn').textContent = '⏸';
+    const cur = globalQueue[globalIdx];
+    if (cur) setCardState(cur.id,'is-playing');
+  } else if (globalQueue.length) {
+    globalIdx = 0; globalPlaying = true; playGlobalIdx();
+  }
+}
+function pauseGlobal() {
+  if (globalAudio) globalAudio.pause();
+  globalPlaying = false;
+  document.getElementById('globalPlayBtn').textContent = '▶';
+  const cur = globalQueue[globalIdx];
+  if (cur) setCardState(cur.id,'');
+}
+function stopGlobal() {
+  if (globalAudio) {
+    globalAudio.pause();
+    const cur = globalQueue[globalIdx];
+    if (cur) { setCardState(cur.id,''); setPlayBtn(cur.id,false); resetWave(cur.id); }
+    globalAudio = null;
+  }
+  globalPlaying = false; globalIdx = -1;
+  document.getElementById('globalPlayBtn').textContent = '▶';
+  document.getElementById('globalFill').style.width = '0%';
+}
+function globalSkipBack() {
+  stopGlobal();
+  if (!globalQueue.length) return;
+  globalIdx = 0; globalPlaying = true; playGlobalIdx();
+}
+function globalSkipForward() {
+  if (!globalPlaying) return;
+  if (globalAudio) globalAudio.pause();
+  const cur = globalQueue[globalIdx];
+  if (cur) { setCardState(cur.id,''); setPlayBtn(cur.id,false); resetWave(cur.id); }
+  globalIdx++;
+  if (globalIdx < globalQueue.length) playGlobalIdx(); else stopGlobal();
+}
+function seekGlobal(e) {
+  if (!globalAudio?.duration) return;
+  const r = document.getElementById('globalTrack').getBoundingClientRect();
+  globalAudio.currentTime = ((e.clientX - r.left) / r.width) * globalAudio.duration;
+}
+function updateGlobalUI(lid) {
+  const line = findLine(lid);
+  const sec = sectionOf(lid);
+  document.getElementById('globalLineLabel').textContent =
+    (sec ? sec.type + ' · ' : '') + 'LINE ' + lineNum(lid);
+  document.getElementById('globalLyricPreview').textContent = line?.lyric || '(no lyric)';
+}
+
+// ── EXPORT ────────────────────────────────────────────────────
+// Detect iOS
+function isIOS() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+async function exportSong() {
+  if (!globalQueue.length) { showToast('No recorded lines to export'); return; }
+  const btn = document.getElementById('exportBtn');
+  btn.classList.add('busy'); btn.textContent = '⏳ STITCHING…';
+  showToast('Stitching ' + globalQueue.length + ' line(s)…');
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AC();
+    const buffers = await Promise.all(globalQueue.map(async item => {
+      const line = findLine(item.id);
+      const ab = await line.blob.arrayBuffer();
+      return ctx.decodeAudioData(ab);
+    }));
+    const sr = buffers[0].sampleRate;
+    const ch = Math.max(...buffers.map(b => b.numberOfChannels));
+    const total = buffers.reduce((a, b) => a + b.length, 0);
+    const offline = new OfflineAudioContext(ch, total, sr);
+    let off = 0;
+    buffers.forEach(buf => {
+      const src = offline.createBufferSource();
+      src.buffer = buf; src.connect(offline.destination);
+      src.start(off / sr); off += buf.length;
+    });
+    showToast('Rendering…');
+    const rendered = await offline.startRendering();
+    ctx.close();
+    const wavBlob = toWav(rendered);
+    const title = (document.getElementById('songTitle').value || 'song')
+      .replace(/[^a-z0-9]/gi,'_').toLowerCase();
+    const filename = title + '.wav';
+
+    if (isIOS()) {
+      // iOS: auto-download blocked — show modal with open-in-new-tab approach
+      const url = URL.createObjectURL(wavBlob);
+      const modal = document.getElementById('iosModal');
+      document.getElementById('iosModalTitle').textContent = filename;
+      const openBtn = document.getElementById('iosOpenBtn');
+      openBtn.href = url;
+      openBtn.download = filename;
+      // Clean up old url after 10 min
+      setTimeout(() => URL.revokeObjectURL(url), 600000);
+      modal.classList.add('show');
+    } else {
+      // Android / desktop: direct download
+      const url = URL.createObjectURL(wavBlob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click();
+      setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+      showToast('✓ Downloading ' + filename);
+    }
+  } catch (err) {
+    console.error(err);
+    showToast('Export error: ' + err.message);
+  }
+  btn.classList.remove('busy'); btn.textContent = '⬇ EXPORT';
+}
+
+function closeIosModal(e) {
+  if (e && e.target !== document.getElementById('iosModal')) return;
+  document.getElementById('iosModal').classList.remove('show');
+}
+
+function toWav(buf) {
+  const ch = buf.numberOfChannels, sr = buf.sampleRate, len = buf.length;
+  const ab = new ArrayBuffer(44 + len * ch * 2);
+  const v = new DataView(ab);
+  const s = (o, str) => [...str].forEach((c, i) => v.setUint8(o+i, c.charCodeAt(0)));
+  s(0,'RIFF'); v.setUint32(4, 36+len*ch*2, true); s(8,'WAVE'); s(12,'fmt ');
+  v.setUint32(16,16,true); v.setUint16(20,1,true); v.setUint16(22,ch,true);
+  v.setUint32(24,sr,true); v.setUint32(28,sr*ch*2,true);
+  v.setUint16(32,ch*2,true); v.setUint16(34,16,true);
+  s(36,'data'); v.setUint32(40,len*ch*2,true);
+  let o = 44;
+  for (let i = 0; i < len; i++) for (let c = 0; c < ch; c++) {
+    const x = Math.max(-1, Math.min(1, buf.getChannelData(c)[i]));
+    v.setInt16(o, x < 0 ? x*0x8000 : x*0x7FFF, true); o += 2;
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+// ── HELPERS ───────────────────────────────────────────────────
+function uid() { return Math.random().toString(36).slice(2,10); }
+function fmt(s) {
+  s = Math.max(0, Number(s));
+  return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0');
+}
+function randBars(n, loud) {
+  return Array.from({length:n}, () => loud ? 4+Math.random()*20 : 2+Math.random()*6);
+}
+function bestMime() {
+  for (const t of ['audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus','audio/mp4'])
+    if (MediaRecorder.isTypeSupported(t)) return t;
+  return '';
+}
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 3500);
+}
+</script>
+
+<!-- iOS EXPORT MODAL -->
+<div class="ios-modal-backdrop" id="iosModal" onclick="closeIosModal(event)">
+  <div class="ios-modal">
+    <div class="ios-modal-title">Export Song</div>
+    <div class="ios-modal-subtitle" id="iosModalTitle">my-song.wav</div>
+    <div class="ios-modal-steps">
+      <strong>To save to your iPhone:</strong><br>
+      1. Tap <strong>Open Audio</strong> below<br>
+      2. Tap the <strong>Share</strong> button (box with arrow)<br>
+      3. Choose <strong>Save to Files</strong><br>
+      4. Pick a location and tap <strong>Save</strong>
+    </div>
+    <a class="ios-open-btn" id="iosOpenBtn" href="#" target="_blank">Open Audio File</a>
+    <button class="ios-cancel-btn" onclick="closeIosModal()">Cancel</button>
+  </div>
+</div>
+
+</body>
+</html>
